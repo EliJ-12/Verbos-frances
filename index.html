@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conjugaison Française - Juego de Verbos</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Iconos SVG simples
+        const Timer = ({size = 24}) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="13" r="7"/>
+                <polyline points="12 10 12 13 15 15"/>
+                <path d="M9 2h6"/>
+            </svg>
+        );
+
+        const Check = ({size = 24, className = ""}) => (
+            <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="20 6 9 17 4 12"/>
+            </svg>
+        );
+
+        const X = ({size = 24, className = ""}) => (
+            <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+        );
+
+        const Trophy = ({size = 24, className = ""}) => (
+            <svg className={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/>
+                <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/>
+                <path d="M4 22h16"/>
+                <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/>
+                <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/>
+                <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/>
+            </svg>
+        );
+
+        const Play = ({size = 24}) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+        );
+
+        const RotateCcw = ({size = 24}) => (
+            <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <polyline points="1 4 1 10 7 10"/>
+                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/>
+            </svg>
+        );
+
+        const FrenchVerbGame = () => {
+            const verbs = {
+                'être': { translations: 'ser, estar', conjugations: ['suis', 'es', 'est', 'sommes', 'êtes', 'sont'] },
+                'avoir': { translations: 'tener, haber', conjugations: ['ai', 'as', 'a', 'avons', 'avez', 'ont'] },
+                'aller': { translations: 'ir', conjugations: ['vais', 'vas', 'va', 'allons', 'allez', 'vont'] },
+                'faire': { translations: 'hacer', conjugations: ['fais', 'fais', 'fait', 'faisons', 'faites', 'font'] },
+                'dire': { translations: 'decir', conjugations: ['dis', 'dis', 'dit', 'disons', 'dites', 'disent'] },
+                'pouvoir': { translations: 'poder', conjugations: ['peux', 'peux', 'peut', 'pouvons', 'pouvez', 'peuvent'] },
+                'vouloir': { translations: 'querer', conjugations: ['veux', 'veux', 'veut', 'voulons', 'voulez', 'veulent'] },
+                'venir': { translations: 'venir', conjugations: ['viens', 'viens', 'vient', 'venons', 'venez', 'viennent'] },
+                'devoir': { translations: 'deber', conjugations: ['dois', 'dois', 'doit', 'devons', 'devez', 'doivent'] },
+                'prendre': { translations: 'tomar, coger', conjugations: ['prends', 'prends', 'prend', 'prenons', 'prenez', 'prennent'] },
+                'savoir': { translations: 'saber', conjugations: ['sais', 'sais', 'sait', 'savons', 'savez', 'savent'] },
+                'voir': { translations: 'ver', conjugations: ['vois', 'vois', 'voit', 'voyons', 'voyez', 'voient'] },
+                'mettre': { translations: 'poner, meter', conjugations: ['mets', 'mets', 'met', 'mettons', 'mettez', 'mettent'] },
+                'falloir': { translations: 'ser necesario', conjugations: ['-', '-', 'faut', '-', '-', '-'] },
+                'donner': { translations: 'dar', conjugations: ['donne', 'donnes', 'donne', 'donnons', 'donnez', 'donnent'] },
+                'parler': { translations: 'hablar', conjugations: ['parle', 'parles', 'parle', 'parlons', 'parlez', 'parlent'] },
+                'trouver': { translations: 'encontrar', conjugations: ['trouve', 'trouves', 'trouve', 'trouvons', 'trouvez', 'trouvent'] },
+                'passer': { translations: 'pasar', conjugations: ['passe', 'passes', 'passe', 'passons', 'passez', 'passent'] },
+                'croire': { translations: 'creer', conjugations: ['crois', 'crois', 'croit', 'croyons', 'croyez', 'croient'] },
+                'demander': { translations: 'pedir, preguntar', conjugations: ['demande', 'demandes', 'demande', 'demandons', 'demandez', 'demandent'] },
+                'aimer': { translations: 'amar, gustar', conjugations: ['aime', 'aimes', 'aime', 'aimons', 'aimez', 'aiment'] },
+                'tenir': { translations: 'sostener, tener', conjugations: ['tiens', 'tiens', 'tient', 'tenons', 'tenez', 'tiennent'] },
+                'partir': { translations: 'partir, irse', conjugations: ['pars', 'pars', 'part', 'partons', 'partez', 'partent'] },
+                'sortir': { translations: 'salir', conjugations: ['sors', 'sors', 'sort', 'sortons', 'sortez', 'sortent'] },
+                'arriver': { translations: 'llegar', conjugations: ['arrive', 'arrives', 'arrive', 'arrivons', 'arrivez', 'arrivent'] },
+                'entendre': { translations: 'oír, escuchar', conjugations: ['entends', 'entends', 'entend', 'entendons', 'entendez', 'entendent'] },
+                'rendre': { translations: 'devolver, rendir', conjugations: ['rends', 'rends', 'rend', 'rendons', 'rendez', 'rendent'] },
+                'rester': { translations: 'quedar, permanecer', conjugations: ['reste', 'restes', 'reste', 'restons', 'restez', 'restent'] },
+                'porter': { translations: 'llevar, portar', conjugations: ['porte', 'portes', 'porte', 'portons', 'portez', 'portent'] },
+                'croire': { translations: 'creer', conjugations: ['crois', 'crois', 'croit', 'croyons', 'croyez', 'croient'] },
+                'paraître': { translations: 'parecer', conjugations: ['parais', 'parais', 'paraît', 'paraissons', 'paraissez', 'paraissent'] },
+                'connaître': { translations: 'conocer', conjugations: ['connais', 'connais', 'connaît', 'connaissons', 'connaissez', 'connaissent'] },
+                'suivre': { translations: 'seguir', conjugations: ['suis', 'suis', 'suit', 'suivons', 'suivez', 'suivent'] },
+                'montrer': { translations: 'mostrar', conjugations: ['montre', 'montres', 'montre', 'montrons', 'montrez', 'montrent'] },
+                'vivre': { translations: 'vivir', conjugations: ['vis', 'vis', 'vit', 'vivons', 'vivez', 'vivent'] },
+                'regarder': { translations: 'mirar', conjugations: ['regarde', 'regardes', 'regarde', 'regardons', 'regardez', 'regardent'] },
+                'laisser': { translations: 'dejar', conjugations: ['laisse', 'laisses', 'laisse', 'laissons', 'laissez', 'laissent'] },
+                'reprendre': { translations: 'retomar, reanudar', conjugations: ['reprends', 'reprends', 'reprend', 'reprenons', 'reprenez', 'reprennent'] },
+                'sembler': { translations: 'parecer', conjugations: ['semble', 'sembles', 'semble', 'semblons', 'semblez', 'semblent'] },
+                'tomber': { translations: 'caer', conjugations: ['tombe', 'tombes', 'tombe', 'tombons', 'tombez', 'tombent'] },
+                'servir': { translations: 'servir', conjugations: ['sers', 'sers', 'sert', 'servons', 'servez', 'servent'] },
+                'courir': { translations: 'correr', conjugations: ['cours', 'cours', 'court', 'courons', 'courez', 'courent'] },
+                'sentir': { translations: 'sentir', conjugations: ['sens', 'sens', 'sent', 'sentons', 'sentez', 'sentent'] },
+                'recevoir': { translations: 'recibir', conjugations: ['reçois', 'reçois', 'reçoit', 'recevons', 'recevez', 'reçoivent'] },
+                'comprendre': { translations: 'comprender', conjugations: ['comprends', 'comprends', 'comprend', 'comprenons', 'comprenez', 'comprennent'] },
+                'apprendre': { translations: 'aprender', conjugations: ['apprends', 'apprends', 'apprend', 'apprenons', 'apprenez', 'apprennent'] },
+                'appeler': { translations: 'llamar', conjugations: ['appelle', 'appelles', 'appelle', 'appelons', 'appelez', 'appellent'] },
+                'devenir': { translations: 'convertirse, llegar a ser', conjugations: ['deviens', 'deviens', 'devient', 'devenons', 'devenez', 'deviennent'] },
+                'revenir': { translations: 'volver, regresar', conjugations: ['reviens', 'reviens', 'revient', 'revenons', 'revenez', 'reviennent'] },
+                'entrer': { translations: 'entrar', conjugations: ['entre', 'entres', 'entre', 'entrons', 'entrez', 'entrent'] },
+                'attendre': { translations: 'esperar', conjugations: ['attends', 'attends', 'attend', 'attendons', 'attendez', 'attendent'] },
+                'perdre': { translations: 'perder', conjugations: ['perds', 'perds', 'perd', 'perdons', 'perdez', 'perdent'] },
+                'écrire': { translations: 'escribir', conjugations: ['écris', 'écris', 'écrit', 'écrivons', 'écrivez', 'écrivent'] },
+                'ouvrir': { translations: 'abrir', conjugations: ['ouvre', 'ouvres', 'ouvre', 'ouvrons', 'ouvrez', 'ouvrent'] },
+                'travailler': { translations: 'trabajar', conjugations: ['travaille', 'travailles', 'travaille', 'travaillons', 'travaillez', 'travaillent'] },
+                'commencer': { translations: 'comenzar, empezar', conjugations: ['commence', 'commences', 'commence', 'commençons', 'commencez', 'commencent'] },
+                'permettre': { translations: 'permitir', conjugations: ['permets', 'permets', 'permet', 'permettons', 'permettez', 'permettent'] },
+                'présenter': { translations: 'presentar', conjugations: ['présente', 'présentes', 'présente', 'présentons', 'présentez', 'présentent'] },
+                'lever': { translations: 'levantar', conjugations: ['lève', 'lèves', 'lève', 'levons', 'levez', 'lèvent'] },
+                'obtenir': { translations: 'obtener', conjugations: ['obtiens', 'obtiens', 'obtient', 'obtenons', 'obtenez', 'obtiennent'] },
+                'continuer': { translations: 'continuar', conjugations: ['continue', 'continues', 'continue', 'continuons', 'continuez', 'continuent'] },
+                'mener': { translations: 'llevar, conducir', conjugations: ['mène', 'mènes', 'mène', 'menons', 'menez', 'mènent'] },
+                'ramener': { translations: 'traer de vuelta', conjugations: ['ramène', 'ramènes', 'ramène', 'ramenons', 'ramenez', 'ramènent'] },
+                'penser': { translations: 'pensar', conjugations: ['pense', 'penses', 'pense', 'pensons', 'pensez', 'pensent'] },
+                'expliquer': { translations: 'explicar', conjugations: ['explique', 'expliques', 'explique', 'expliquons', 'expliquez', 'expliquent'] },
+                'lire': { translations: 'leer', conjugations: ['lis', 'lis', 'lit', 'lisons', 'lisez', 'lisent'] },
+                'boire': { translations: 'beber', conjugations: ['bois', 'bois', 'boit', 'buvons', 'buvez', 'boivent'] },
+                'placer': { translations: 'colocar', conjugations: ['place', 'places', 'place', 'plaçons', 'placez', 'placent'] },
+                'plaire': { translations: 'gustar, agradar', conjugations: ['plais', 'plais', 'plaît', 'plaisons', 'plaisez', 'plaisent'] },
+                'naître': { translations: 'nacer', conjugations: ['nais', 'nais', 'naît', 'naissons', 'naissez', 'naissent'] },
+                'mourir': { translations: 'morir', conjugations: ['meurs', 'meurs', 'meurt', 'mourons', 'mourez', 'meurent'] },
+                'rejoindre': { translations: 'reunirse con', conjugations: ['rejoins', 'rejoins', 'rejoint', 'rejoignons', 'rejoignez', 'rejoignent'] },
+                'décider': { translations: 'decidir', conjugations: ['décide', 'décides', 'décide', 'décidons', 'décidez', 'décident'] },
+                'marcher': { translations: 'caminar, andar', conjugations: ['marche', 'marches', 'marche', 'marchons', 'marchez', 'marchent'] },
+                'dormir': { translations: 'dormir', conjugations: ['dors', 'dors', 'dort', 'dormons', 'dormez', 'dorment'] },
+                'offrir': { translations: 'ofrecer', conjugations: ['offre', 'offres', 'offre', 'offrons', 'offrez', 'offrent'] },
+                'souffrir': { translations: 'sufrir', conjugations: ['souffre', 'souffres', 'souffre', 'souffrons', 'souffrez', 'souffrent'] },
+                'retenir': { translations: 'retener', conjugations: ['retiens', 'retiens', 'retient', 'retenons', 'retenez', 'retiennent'] },
+                'construire': { translations: 'construir', conjugations: ['construis', 'construis', 'construit', 'construisons', 'construisez', 'construisent'] },
+                'produire': { translations: 'producir', conjugations: ['produis', 'produis', 'produit', 'produisons', 'produisez', 'produisent'] },
+                'conduire': { translations: 'conducir', conjugations: ['conduis', 'conduis', 'conduit', 'conduisons', 'conduisez', 'conduisent'] },
+                'traduire': { translations: 'traducir', conjugations: ['traduis', 'traduis', 'traduit', 'traduisons', 'traduisez', 'traduisent'] },
+                'réduire': { translations: 'reducir', conjugations: ['réduis', 'réduis', 'réduit', 'réduisons', 'réduisez', 'réduisent'] },
+                'détruire': { translations: 'destruir', conjugations: ['détruis', 'détruis', 'détruit', 'détruisons', 'détruisez', 'détruisent'] },
+                'introduire': { translations: 'introducir', conjugations: ['introduis', 'introduis', 'introduit', 'introduisons', 'introduisez', 'introduisent'] },
+                'manquer': { translations: 'faltar, echar de menos', conjugations: ['manque', 'manques', 'manque', 'manquons', 'manquez', 'manquent'] },
+                'gagner': { translations: 'ganar', conjugations: ['gagne', 'gagnes', 'gagne', 'gagnons', 'gagnez', 'gagnent'] },
+                'reconnaître': { translations: 'reconocer', conjugations: ['reconnais', 'reconnais', 'reconnaît', 'reconnaissons', 'reconnaissez', 'reconnaissent'] },
+                'choisir': { translations: 'elegir', conjugations: ['choisis', 'choisis', 'choisit', 'choisissons', 'choisissez', 'choisissent'] },
+                'finir': { translations: 'terminar', conjugations: ['finis', 'finis', 'finit', 'finissons', 'finissez', 'finissent'] },
+                'réussir': { translations: 'conseguir, lograr', conjugations: ['réussis', 'réussis', 'réussit', 'réussissons', 'réussissez', 'réussissent'] },
+                'agir': { translations: 'actuar', conjugations: ['agis', 'agis', 'agit', 'agissons', 'agissez', 'agissent'] },
+                'réfléchir': { translations: 'reflexionar', conjugations: ['réfléchis', 'réfléchis', 'réfléchit', 'réfléchissons', 'réfléchissez', 'réfléchissent'] },
+                'grandir': { translations: 'crecer', conjugations: ['grandis', 'grandis', 'grandit', 'grandissons', 'grandissez', 'grandissent'] },
+                'remplir': { translations: 'llenar', conjugations: ['remplis', 'remplis', 'remplit', 'remplissons', 'remplissez', 'remplissent'] },
+                'établir': { translations: 'establecer', conjugations: ['établis', 'établis', 'établit', 'établissons', 'établissez', 'établissent'] },
+                'accomplir': { translations: 'cumplir, realizar', conjugations: ['accomplis', 'accomplis', 'accomplit', 'accomplissons', 'accomplissez', 'accomplissent'] },
+                'réunir': { translations: 'reunir', conjugations: ['réunis', 'réunis', 'réunit', 'réunissons', 'réunissez', 'réunissent'] },
+                'vendre': { translations: 'vender', conjugations: ['vends', 'vends', 'vend', 'vendons', 'vendez', 'vendent'] },
+                'répondre': { translations: 'responder', conjugations: ['réponds', 'réponds', 'répond', 'répondons', 'répondez', 'répondent'] },
+                'descendre': { translations: 'bajar, descender', conjugations: ['descends', 'descends', 'descend', 'descendons', 'descendez', 'descendent'] },
+                'défendre': { translations: 'defender', conjugations: ['défends', 'défends', 'défend', 'défendons', 'défendez', 'défendent'] },
+                'dépendre': { translations: 'depender', conjugations: ['dépends', 'dépends', 'dépend', 'dépendons', 'dépendez', 'dépendent'] },
+                'tendre': { translations: 'tender, extender', conjugations: ['tends', 'tends', 'tend', 'tendons', 'tendez', 'tendent'] },
+                'étendre': { translations: 'extender', conjugations: ['étends', 'étends', 'étend', 'étendons', 'étendez', 'étendent'] },
+                'suspendre': { translations: 'suspender', conjugations: ['suspends', 'suspends', 'suspend', 'suspendons', 'suspendez', 'suspendent'] },
+                'confondre': { translations: 'confundir', conjugations: ['confonds', 'confonds', 'confond', 'confondons', 'confondez', 'confondent'] },
+                'correspondre': { translations: 'corresponder', conjugations: ['corresponds', 'corresponds', 'correspond', 'correspondons', 'correspondez', 'correspondent'] },
+                'prétendre': { translations: 'pretender, afirmar', conjugations: ['prétends', 'prétends', 'prétend', 'prétendons', 'prétendez', 'prétendent'] },
+                'répandre': { translations: 'esparcir, difundir', conjugations: ['répands', 'répands', 'répand', 'répandons', 'répandez', 'répandent'] },
+                'fendre': { translations: 'hendir, partir', conjugations: ['fends', 'fends', 'fend', 'fendons', 'fendez', 'fendent'] },
+                'mordre': { translations: 'morder', conjugations: ['mords', 'mords', 'mord', 'mordons', 'mordez', 'mordent'] },
+                'tordre': { translations: 'torcer', conjugations: ['tords', 'tords', 'tord', 'tordons', 'tordez', 'tordent'] },
+                'jouer': { translations: 'jugar', conjugations: ['joue', 'joues', 'joue', 'jouons', 'jouez', 'jouent'] },
+                'chercher': { translations: 'buscar', conjugations: ['cherche', 'cherches', 'cherche', 'cherchons', 'cherchez', 'cherchent'] },
+                'tourner': { translations: 'girar, voltear', conjugations: ['tourne', 'tournes', 'tourne', 'tournons', 'tournez', 'tournent'] },
+                'rencontrer': { translations: 'encontrar, conocer', conjugations: ['rencontre', 'rencontres', 'rencontre', 'rencontrons', 'rencontrez', 'rencontrent'] },
+                'changer': { translations: 'cambiar', conjugations: ['change', 'changes', 'change', 'changeons', 'changez', 'changent'] },
+                'poser': { translations: 'poner, colocar', conjugations: ['pose', 'poses', 'pose', 'posons', 'posez', 'posent'] },
+                'jeter': { translations: 'tirar, lanzar', conjugations: ['jette', 'jettes', 'jette', 'jetons', 'jetez', 'jettent'] },
+                'acheter': { translations: 'comprar', conjugations: ['achète', 'achètes', 'achète', 'achetons', 'achetez', 'achètent'] },
+                'manger': { translations: 'comer', conjugations: ['mange', 'manges', 'mange', 'mangeons', 'mangez', 'mangent'] },
+                'chanter': { translations: 'cantar', conjugations: ['chante', 'chantes', 'chante', 'chantons', 'chantez', 'chantent'] },
+                'danser': { translations: 'bailar', conjugations: ['danse', 'danses', 'danse', 'dansons', 'dansez', 'dansent'] },
+                'étudier': { translations: 'estudiar', conjugations: ['étudie', 'étudies', 'étudie', 'étudions', 'étudiez', 'étudient'] },
+                'écouter': { translations: 'escuchar', conjugations: ['écoute', 'écoutes', 'écoute', 'écoutons', 'écoutez', 'écoutent'] },
+                'compter': { translations: 'contar', conjugations: ['compte', 'comptes', 'compte', 'comptons', 'comptez', 'comptent'] },
+                'fermer': { translations: 'cerrar', conjugations: ['ferme', 'fermes', 'ferme', 'fermons', 'fermez', 'ferment'] },
+                'préparer': { translations: 'preparar', conjugations: ['prépare', 'prépares', 'prépare', 'préparons', 'préparez', 'préparent'] },
+                'voler': { translations: 'volar, robar', conjugations: ['vole', 'voles', 'vole', 'volons', 'volez', 'volent'] },
+                'casser': { translations: 'romper', conjugations: ['casse', 'casses', 'casse', 'cassons', 'cassez', 'cassent'] },
+                'brûler': { translations: 'quemar', conjugations: ['brûle', 'brûles', 'brûle', 'brûlons', 'brûlez', 'brûlent'] },
+                'crier': { translations: 'gritar', conjugations: ['crie', 'cries', 'crie', 'crions', 'criez', 'crient'] },
+                'pleurer': { translations: 'llorar', conjugations: ['pleure', 'pleures', 'pleure', 'pleurons', 'pleurez', 'pleurent'] },
+                'couper': { translations: 'cortar', conjugations: ['coupe', 'coupes', 'coupe', 'coupons', 'coupez', 'coupent'] },
+                'laver': { translations: 'lavar', conjugations: ['lave', 'laves', 'lave', 'lavons', 'lavez', 'lavent'] },
+                'sauver': { translations: 'salvar', conjugations: ['sauve', 'sauves', 'sauve', 'sauvons', 'sauvez', 'sauvent'] },
+                'rouler': { translations: 'rodar', conjugations: ['roule', 'roules', 'roule', 'roulons', 'roulez', 'roulent'] },
+                'tirer': { translations: 'tirar, jalar', conjugations: ['tire', 'tires', 'tire', 'tirons', 'tirez', 'tirent'] },
+                'pousser': { translations: 'empujar', conjugations: ['pousse', 'pousses', 'pousse', 'poussons', 'poussez', 'poussent'] },
+                'peser': { translations: 'pesar', conjugations: ['pèse', 'pèses', 'pèse', 'pesons', 'pesez', 'pèsent'] },
+                'geler': { translations: 'helar', conjugations: ['gèle', 'gèles', 'gèle', 'gelons', 'gelez', 'gèlent'] },
+                'espérer': { translations: 'esperar', conjugations: ['espère', 'espères', 'espère', 'espérons', 'espérez', 'espèrent'] },
+                'préférer': { translations: 'preferir', conjugations: ['préfère', 'préfères', 'préfère', 'préférons', 'préférez', 'préfèrent'] },
+                'répéter': { translations: 'repetir', conjugations: ['répète', 'répètes', 'répète', 'répétons', 'répétez', 'répètent'] },
+                'céder': { translations: 'ceder', conjugations: ['cède', 'cèdes', 'cède', 'cédons', 'cédez', 'cèdent'] },
+                'avancer': { translations: 'avanzar', conjugations: ['avance', 'avances', 'avance', 'avançons', 'avancez', 'avancent'] },
+                'lancer': { translations: 'lanzar', conjugations: ['lance', 'lances', 'lance', 'lançons', 'lancez', 'lancent'] },
+                'voyager': { translations: 'viajar', conjugations: ['voyage', 'voyages', 'voyage', 'voyageons', 'voyagez', 'voyagent'] },
+                'nager': { translations: 'nadar', conjugations: ['nage', 'nages', 'nage', 'nageons', 'nagez', 'nagent'] },
+                'partager': { translations: 'compartir', conjugations: ['partage', 'partages', 'partage', 'partageons', 'partagez', 'partagent'] },
+                'protéger': { translations: 'proteger', conjugations: ['protège', 'protèges', 'protège', 'protégeons', 'protégez', 'protègent'] },
+                'employer': { translations: 'emplear, usar', conjugations: ['emploie', 'emploies', 'emploie', 'employons', 'employez', 'emploient'] },
+                'envoyer': { translations: 'enviar', conjugations: ['envoie', 'envoies', 'envoie', 'envoyons', 'envoyez', 'envoient'] },
+                'nettoyer': { translations: 'limpiar', conjugations: ['nettoie', 'nettoies', 'nettoie', 'nettoyons', 'nettoyez', 'nettoient'] },
+                'essayer': { translations: 'intentar, probar', conjugations: ['essaie', 'essaies', 'essaie', 'essayons', 'essayez', 'essaient'] },
+                'payer': { translations: 'pagar', conjugations: ['paie', 'paies', 'paie', 'payons', 'payez', 'paient'] },
+                'battre': { translations: 'golpear, batir', conjugations: ['bats', 'bats', 'bat', 'battons', 'battez', 'battent'] },
+                'combattre': { translations: 'combatir', conjugations: ['combats', 'combats', 'combat', 'combattons', 'combattez', 'combattent'] },
+                'abattre': { translations: 'abatir', conjugations: ['abats', 'abats', 'abat', 'abattons', 'abattez', 'abattent'] },
+                'admettre': { translations: 'admitir', conjugations: ['admets', 'admets', 'admet', 'admettons', 'admettez', 'admettent'] },
+                'commettre': { translations: 'cometer', conjugations: ['commets', 'commets', 'commet', 'commettons', 'commettez', 'commettent'] },
+                'promettre': { translations: 'prometer', conjugations: ['promets', 'promets', 'promet', 'promettons', 'promettez', 'promettent'] },
+                'soumettre': { translations: 'someter', conjugations: ['soumets', 'soumets', 'soumet', 'soumettons', 'soumettez', 'soumettent'] },
+                'transmettre': { translations: 'transmitir', conjugations: ['transmets', 'transmets', 'transmet', 'transmettons', 'transmettez', 'transmettent'] },
+                'remettre': { translations: 'entregar, devolver', conjugations: ['remets', 'remets', 'remet', 'remettons', 'remettez', 'remettent'] },
+                'omettre': { translations: 'omitir', conjugations: ['omets', 'omets', 'omet', 'omettons', 'omettez', 'omettent'] },
+                'surprendre': { translations: 'sorprender', conjugations: ['surprends', 'surprends', 'surprend', 'surprenons', 'surprenez', 'surprennent'] },
+                'entreprendre': { translations: 'emprender', conjugations: ['entreprends', 'entreprends', 'entreprend', 'entreprenons', 'entreprenez', 'entreprennent'] },
+                'peindre': { translations: 'pintar', conjugations: ['peins', 'peins', 'peint', 'peignons', 'peignez', 'peignent'] },
+                'craindre': { translations: 'temer', conjugations: ['crains', 'crains', 'craint', 'craignons', 'craignez', 'craignent'] },
+                'plaindre': { translations: 'compadecer', conjugations: ['plains', 'plains', 'plaint', 'plaignons', 'plaignez', 'plaignent'] },
+                'joindre': { translations: 'juntar, unir', conjugations: ['joins', 'joins', 'joint', 'joignons', 'joignez', 'joignent'] },
+                'atteindre': { translations: 'alcanzar', conjugations: ['atteins', 'atteins', 'atteint', 'atteignons', 'atteignez', 'atteignent'] },
+                'éteindre': { translations: 'apagar', conjugations: ['éteins', 'éteins', 'éteint', 'éteignons', 'éteignez', 'éteignent'] },
+                'feindre': { translations: 'fingir', conjugations: ['feins', 'feins', 'feint', 'feignons', 'feignez', 'feignent'] },
+                'teindre': { translations: 'teñir', conjugations: ['teins', 'teins', 'teint', 'teignons', 'teignez', 'teignent'] },
+                'contraindre': { translations: 'obligar, forzar', conjugations: ['contrains', 'contrains', 'contraint', 'contraignons', 'contraignez', 'contraignent'] },
+                'vaincre': { translations: 'vencer', conjugations: ['vaincs', 'vaincs', 'vainc', 'vainquons', 'vainquez', 'vainquent'] },
+                'convaincre': { translations: 'convencer', conjugations: ['convaincs', 'convaincs', 'convainc', 'convainquons', 'convainquez', 'convainquent'] },
+                'rire': { translations: 'reír', conjugations: ['ris', 'ris', 'rit', 'rions', 'riez', 'rient'] },
+                'sourire': { translations: 'sonreír', conjugations: ['souris', 'souris', 'sourit', 'sourions', 'souriez', 'sourient'] },
+                'taire': { translations: 'callar', conjugations: ['tais', 'tais', 'tait', 'taisons', 'taisez', 'taisent'] },
+                'apercevoir': { translations: 'percibir, divisar', conjugations: ['aperçois', 'aperçois', 'aperçoit', 'apercevons', 'apercevez', 'aperçoivent'] },
+                'concevoir': { translations: 'concebir', conjugations: ['conçois', 'conçois', 'conçoit', 'concevons', 'concevez', 'conçoivent'] },
+                'décevoir': { translations: 'decepcionar', conjugations: ['déçois', 'déçois', 'déçoit', 'décevons', 'décevez', 'déçoivent'] },
+                'contenir': { translations: 'contener', conjugations: ['contiens', 'contiens', 'contient', 'contenons', 'contenez', 'contiennent'] },
+                'maintenir': { translations: 'mantener', conjugations: ['maintiens', 'maintiens', 'maintient', 'maintenons', 'maintenez', 'maintiennent'] },
+                'appartenir': { translations: 'pertenecer', conjugations: ['appartiens', 'appartiens', 'appartient', 'appartenons', 'appartenez', 'appartiennent'] },
+                'soutenir': { translations: 'sostener, apoyar', conjugations: ['soutiens', 'soutiens', 'soutient', 'soutenons', 'soutenez', 'soutiennent'] },
+                'parcourir': { translations: 'recorrer', conjugations: ['parcours', 'parcours', 'parcourt', 'parcourons', 'parcourez', 'parcourent'] },
+                'secourir': { translations: 'socorrer', conjugations: ['secours', 'secours', 'secourt', 'secourons', 'secourez', 'secourent'] },
+                'acquérir': { translations: 'adquirir', conjugations: ['acquiers', 'acquiers', 'acquiert', 'acquérons', 'acquérez', 'acquièrent'] },
+                'conquérir': { translations: 'conquistar', conjugations: ['conquiers', 'conquiers', 'conquiert', 'conquérons', 'conquérez', 'conquièrent'] },
+                'cueillir': { translations: 'recoger, cosechar', conjugations: ['cueille', 'cueilles', 'cueille', 'cueillons', 'cueillez', 'cueillent'] },
+                'accueillir': { translations: 'acoger, recibir', conjugations: ['accueille', 'accueilles', 'accueille', 'accueillons', 'accueillez', 'accueillent'] },
+                'recueillir': { translations: 'recoger, recopilar', conjugations: ['recueille', 'recueilles', 'recueille', 'recueillons', 'recueillez', 'recueillent'] },
+                'assaillir': { translations: 'asaltar', conjugations: ['assaille', 'assailles', 'assaille', 'assaillons', 'assaillez', 'assaillent'] },
+                'couvrir': { translations: 'cubrir', conjugations: ['couvre', 'couvres', 'couvre', 'couvrons', 'couvrez', 'couvrent'] },
+                'découvrir': { translations: 'descubrir', conjugations: ['découvre', 'découvres', 'découvre', 'découvrons', 'découvrez', 'découvrent'] },
+                'mentir': { translations: 'mentir', conjugations: ['mens', 'mens', 'ment', 'mentons', 'mentez', 'mentent'] },
+                'cuire': { translations: 'cocer, cocinar', conjugations: ['cuis', 'cuis', 'cuit', 'cuisons', 'cuisez', 'cuisent'] },
+                'nuire': { translations: 'dañar, perjudicar', conjugations: ['nuis', 'nuis', 'nuit', 'nuisons', 'nuisez', 'nuisent'] },
+                'luire': { translations: 'brillar', conjugations: ['luis', 'luis', 'luit', 'luisons', 'luisez', 'luisent'] },
+                'séduire': { translations: 'seducir', conjugations: ['séduis', 'séduis', 'séduit', 'séduisons', 'séduisez', 'séduisent'] },
+                'inscrire': { translations: 'inscribir', conjugations: ['inscris', 'inscris', 'inscrit', 'inscrivons', 'inscrivez', 'inscrivent'] },
+                'décrire': { translations: 'describir', conjugations: ['décris', 'décris', 'décrit', 'décrivons', 'décrivez', 'décrivent'] },
+                'prescrire': { translations: 'prescribir', conjugations: ['prescris', 'prescris', 'prescrit', 'prescrivons', 'prescrivez', 'prescrivent'] },
+                'transcrire': { translations: 'transcribir', conjugations: ['transcris', 'transcris', 'transcrit', 'transcrivons', 'transcrivez', 'transcrivent'] },
+                'relire': { translations: 'releer', conjugations: ['relis', 'relis', 'relit', 'relisons', 'relisez', 'relisent'] },
+                'élire': { translations: 'elegir', conjugations: ['élis', 'élis', 'élit', 'élisons', 'élisez', 'élisent'] },
+                'poursuivre': { translations: 'perseguir, continuar', conjugations: ['poursuis', 'poursuis', 'poursuit', 'poursuivons', 'poursuivez', 'poursuivent'] },
+                'survivre': { translations: 'sobrevivir', conjugations: ['survis', 'survis', 'survit', 'survivons', 'survivez', 'survivent'] },
+                'revivre': { translations: 'revivir', conjugations: ['revis', 'revis', 'revit', 'revivons', 'revivez', 'revivent'] },
+                'apparaître': { translations: 'aparecer', conjugations: ['apparais', 'apparais', 'apparaît', 'apparaissons', 'apparaissez', 'apparaissent'] },
+                'disparaître': { translations: 'desaparecer', conjugations: ['disparais', 'disparais', 'disparaît', 'disparaissons', 'disparaissez', 'disparaissent'] },
+                'méconnaître': { translations: 'desconocer', conjugations: ['méconnais', 'méconnais', 'méconnaît', 'méconnaissons', 'méconnaissez', 'méconnaissent'] },
+                'bâtir': { translations: 'construir, edificar', conjugations: ['bâtis', 'bâtis', 'bâtit', 'bâtissons', 'bâtissez', 'bâtissent'] },
+                'punir': { translations: 'castigar', conjugations: ['punis', 'punis', 'punit', 'punissons', 'punissez', 'punissent'] },
+                'ralentir': { translations: 'ralentizar', conjugations: ['ralentis', 'ralentis', 'ralentit', 'ralentissons', 'ralentissez', 'ralentissent'] },
+                'saisir': { translations: 'agarrar, captar', conjugations: ['saisis', 'saisis', 'saisit', 'saisissons', 'saisissez', 'saisissent'] },
+                'vieillir': { translations: 'envejecer', conjugations: ['vieillis', 'vieillis', 'vieillit', 'vieillissons', 'vieillissez', 'vieillissent'] },
+                'nourrir': { translations: 'alimentar, nutrir', conjugations: ['nourris', 'nourris', 'nourrit', 'nourrissons', 'nourrissez', 'nourrissent'] },
+                'guérir': { translations: 'curar, sanar', conjugations: ['guéris', 'guéris', 'guérit', 'guérissons', 'guérissez', 'guérissent'] },
+                'investir': { translations: 'invertir', conjugations: ['investis', 'investis', 'investit', 'investissons', 'investissez', 'investissent'] },
+                'avertir': { translations: 'advertir, avisar', conjugations: ['avertis', 'avertis', 'avertit', 'avertissons', 'avertissez', 'avertissent'] },
+                'obéir': { translations: 'obedecer', conjugations: ['obéis', 'obéis', 'obéit', 'obéissons', 'obéissez', 'obéissent'] },
+                'résoudre': { translations: 'resolver', conjugations: ['résous', 'résous', 'résout', 'résolvons', 'résolvez', 'résolvent'] },
+                'dissoudre': { translations: 'disolver', conjugations: ['dissous', 'dissous', 'dissout', 'dissolvons', 'dissolvez', 'dissolvent'] },
+                'coudre': { translations: 'coser', conjugations: ['couds', 'couds', 'coud', 'cousons', 'cousez', 'cousent'] },
+                'moudre': { translations: 'moler', conjugations: ['mouds', 'mouds', 'moud', 'moulons', 'moulez', 'moulent'] },
+                'conclure': { translations: 'concluir', conjugations: ['conclus', 'conclus', 'conclut', 'concluons', 'concluez', 'concluent'] },
+                'exclure': { translations: 'excluir', conjugations: ['exclus', 'exclus', 'exclut', 'excluons', 'excluez', 'excluent'] },
+                'inclure': { translations: 'incluir', conjugations: ['inclus', 'inclus', 'inclut', 'incluons', 'incluez', 'incluent'] },
+                'rompre': { translations: 'romper', conjugations: ['romps', 'romps', 'rompt', 'rompons', 'rompez', 'rompent'] },
+                'corrompre': { translations: 'corromper', conjugations: ['corromps', 'corromps', 'corrompt', 'corrompons', 'corrompez', 'corrompent'] },
+                'interrompre': { translations: 'interrumpir', conjugations: ['interromps', 'interromps', 'interrompt', 'interrompons', 'interrompez', 'interrompent'] },
+                'croître': { translations: 'crecer', conjugations: ['croîs', 'croîs', 'croît', 'croissons', 'croissez', 'croissent'] },
+                'accroître': { translations: 'aumentar', conjugations: ['accroîs', 'accroîs', 'accroît', 'accroissons', 'accroissez', 'accroissent'] },
+                'décroître': { translations: 'decrecer', conjugations: ['décroîs', 'décroîs', 'décroît', 'décroissons', 'décroissez', 'décroissent'] }
+            };
+
+            const pronouns = ['je', 'tu', 'il/elle', 'nous', 'vous', 'ils/elles'];
+            
+            const [screen, setScreen] = useState('menu');
+            const [gameMode, setGameMode] = useState(null);
+            const [timeLimit, setTimeLimit] = useState(10);
+            const [verbLimit, setVerbLimit] = useState(10);
+            const [currentVerb, setCurrentVerb] = useState('');
+            const [usedVerbs, setUsedVerbs] = useState([]);
+            const [answers, setAnswers] = useState(['', '', '', '', '', '']);
+            const [score, setScore] = useState(0);
+            const [verbsCompleted, setVerbsCompleted] = useState(0);
+            const [showResult, setShowResult] = useState(false);
+            const [results, setResults] = useState([]);
+            const [timeLeft, setTimeLeft] = useState(0);
+            const [isPlaying, setIsPlaying] = useState(false);
+            const [gameOver, setGameOver] = useState(false);
+            const [playerName, setPlayerName] = useState('');
+            const [leaderboard, setLeaderboard] = useState([]);
+            const [showLeaderboard, setShowLeaderboard] = useState(false);
+
+            useEffect(() => {
+                if (isPlaying && gameMode === 'timed' && timeLeft > 0) {
+                    const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000);
+                    return () => clearTimeout(timer);
+                } else if (timeLeft === 0 && isPlaying && gameMode === 'timed') {
+                    endGame();
+                }
+            }, [timeLeft, isPlaying, gameMode]);
+
+            useEffect(() => {
+                if (showLeaderboard) {
+                    loadLeaderboard();
+                }
+            }, [showLeaderboard]);
+
+            const loadLeaderboard = () => {
+                const stored = localStorage.getItem('frenchVerbsLeaderboard');
+                if (stored) {
+                    const data = JSON.parse(stored);
+                    data.sort((a, b) => b.verbsPerMinute - a.verbsPerMinute);
+                    setLeaderboard(data.slice(0, 20));
+                } else {
+                    setLeaderboard([]);
+                }
+            };
+
+            const saveToLeaderboard = (name, verbsCount, timeInMinutes) => {
+                const verbsPerMinute = (verbsCount / timeInMinutes).toFixed(2);
+                const entry = {
+                    name,
+                    verbsCount,
+                    timeInMinutes,
+                    verbsPerMinute: parseFloat(verbsPerMinute),
+                    score,
+                    date: new Date().toLocaleDateString('es-ES')
+                };
+                
+                const stored = localStorage.getItem('frenchVerbsLeaderboard');
+                const current = stored ? JSON.parse(stored) : [];
+                current.push(entry);
+                current.sort((a, b) => b.verbsPerMinute - a.verbsPerMinute);
+                localStorage.setItem('frenchVerbsLeaderboard', JSON.stringify(current.slice(0, 50)));
+            };
+
+            const startGame = (mode) => {
+                setGameMode(mode);
+                setScore(0);
+                setVerbsCompleted(0);
+                setUsedVerbs([]);
+                setIsPlaying(true);
+                setGameOver(false);
+                setTimeLeft(mode === 'timed' ? timeLimit * 60 : 0);
+                setScreen('game');
+                generateNewVerb();
+            };
+
+            const generateNewVerb = () => {
+                const verbList = Object.keys(verbs);
+                const availableVerbs = verbList.filter(v => !usedVerbs.includes(v));
+                
+                if (availableVerbs.length === 0) {
+                    setUsedVerbs([]);
+                    const randomVerb = verbList[Math.floor(Math.random() * verbList.length)];
+                    setCurrentVerb(randomVerb);
+                } else {
+                    const randomVerb = availableVerbs[Math.floor(Math.random() * availableVerbs.length)];
+                    setCurrentVerb(randomVerb);
+                }
+                
+                setAnswers(['', '', '', '', '', '']);
+                setShowResult(false);
+                setResults([]);
+            };
+
+            const handleInputChange = (index, value) => {
+                const newAnswers = [...answers];
+                newAnswers[index] = value.toLowerCase().trim();
+                setAnswers(newAnswers);
+            };
+
+            const handleSubmit = () => {
+                if (!currentVerb) return;
+                
+                const correctAnswers = verbs[currentVerb].conjugations;
+                const newResults = answers.map((answer, i) => answer === correctAnswers[i]);
+                const correctCount = newResults.filter(r => r).length;
+                
+                setResults(newResults);
+                setShowResult(true);
+                setScore(score + correctCount);
+                setVerbsCompleted(verbsCompleted + 1);
+            };
+
+            const handleNext = () => {
+                if (gameMode === 'untimed' && verbsCompleted >= verbLimit) {
+                    endGame();
+                } else {
+                    setUsedVerbs([...usedVerbs, currentVerb]);
+                    generateNewVerb();
+                }
+            };
+
+            const endGame = () => {
+                setIsPlaying(false);
+                setGameOver(true);
+            };
+
+            const resetGame = () => {
+                setScreen('menu');
+                setGameMode(null);
+                setCurrentVerb('');
+                setAnswers(['', '', '', '', '', '']);
+                setScore(0);
+                setVerbsCompleted(0);
+                setUsedVerbs([]);
+                setShowResult(false);
+                setResults([]);
+                setTimeLeft(0);
+                setIsPlaying(false);
+                setGameOver(false);
+                setPlayerName('');
+            };
+
+            const formatTime = (seconds) => {
+                const mins = Math.floor(seconds / 60);
+                const secs = seconds % 60;
+                return `${mins}:${secs.toString().padStart(2, '0')}`;
+            };
+
+            if (screen === 'menu') {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
+                            <div className="text-center mb-8">
+                                <h1 className="text-3xl font-bold text-indigo-600 mb-2">Conjugaison Française</h1>
+                                <p className="text-gray-600">Practica el presente del indicativo</p>
+                                <p className="text-sm text-gray-500 mt-2">{Object.keys(verbs).length} verbos disponibles</p>
+                            </div>
+                            
+                            <div className="space-y-4">
+                                <button
+                                    onClick={() => setScreen('config-timed')}
+                                    className="w-full bg-indigo-600 text-white py-4 rounded-xl font-semibold hover:bg-indigo-700 transition flex items-center justify-center gap-2"
+                                >
+                                    <Timer size={24} />
+                                    Modo con Tiempo
+                                </button>
+                                
+                                <button
+                                    onClick={() => setScreen('config-untimed')}
+                                    className="w-full bg-emerald-600 text-white py-4 rounded-xl font-semibold hover:bg-emerald-700 transition flex items-center justify-center gap-2"
+                                >
+                                    <Play size={24} />
+                                    Modo sin Tiempo
+                                </button>
+
+                                <button
+                                    onClick={() => setShowLeaderboard(true)}
+                                    className="w-full bg-amber-600 text-white py-4 rounded-xl font-semibold hover:bg-amber-700 transition flex items-center justify-center gap-2"
+                                >
+                                    <Trophy size={24} />
+                                    Ranking Local
+                                </button>
+                            </div>
+                        </div>
+
+                        {showLeaderboard && (
+                            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                                <div className="bg-white rounded-2xl shadow-xl p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+                                    <div className="flex justify-between items-center mb-6">
+                                        <h2 className="text-2xl font-bold text-indigo-600 flex items-center gap-2">
+                                            <Trophy size={28} />
+                                            Ranking Local (Modo Tiempo)
+                                        </h2>
+                                        <button
+                                            onClick={() => setShowLeaderboard(false)}
+                                            className="text-gray-500 hover:text-gray-700"
+                                        >
+                                            <X size={24} />
+                                        </button>
+                                    </div>
+
+                                    {leaderboard.length === 0 ? (
+                                        <div className="text-center py-8 text-gray-600">
+                                            No hay puntuaciones todavía. ¡Sé el primero!
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-2">
+                                            {leaderboard.map((entry, index) => (
+                                                <div
+                                                    key={index}
+                                                    className={`p-4 rounded-lg flex items-center justify-between ${
+                                                        index === 0 ? 'bg-amber-100 border-2 border-amber-400' :
+                                                        index === 1 ? 'bg-gray-100 border-2 border-gray-400' :
+                                                        index === 2 ? 'bg-orange-100 border-2 border-orange-400' :
+                                                        'bg-gray-50'
+                                                    }`}
+                                                >
+                                                    <div className="flex items-center gap-4">
+                                                        <div className={`font-bold text-lg w-8 ${
+                                                            index === 0 ? 'text-amber-600' :
+                                                            index === 1 ? 'text-gray-600' :
+                                                            index === 2 ? 'text-orange-600' :
+                                                            'text-gray-500'
+                                                        }`}>
+                                                            #{index + 1}
+                                                        </div>
+                                                        <div>
+                                                            <div className="font-semibold text-gray-800">{entry.name}</div>
+                                                            <div className="text-sm text-gray-600">{entry.date}</div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <div className="font-bold text-indigo-600 text-lg">
+                                                            {entry.verbsPerMinute} v/min
+                                                        </div>
+                                                        <div className="text-sm text-gray-600">
+                                                            {entry.verbsCount} verbos en {entry.timeInMinutes} min
+                                                        </div>
+                                                        <div className="text-xs text-gray-500">
+                                                            {entry.score}/{entry.verbsCount * 6} correctas
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            }
+
+            if (screen === 'config-timed') {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
+                            <div className="text-center mb-8">
+                                <h2 className="text-2xl font-bold text-indigo-600 mb-2">Modo con Tiempo</h2>
+                                <p className="text-gray-600">Conjuga el máximo de verbos posibles</p>
+                            </div>
+
+                            <div className="mb-6">
+                                <label className="block text-gray-700 font-semibold mb-3">
+                                    Tu nombre:
+                                </label>
+                                <input
+                                    type="text"
+                                    value={playerName}
+                                    onChange={(e) => setPlayerName(e.target.value)}
+                                    placeholder="Escribe tu nombre"
+                                    className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    maxLength={20}
+                                />
+                            </div>
+
+                            <div className="mb-8">
+                                <label className="block text-gray-700 font-semibold mb-3">
+                                    Duración: {timeLimit} minutos
+                                </label>
+                                <input
+                                    type="range"
+                                    min="5"
+                                    max="30"
+                                    step="5"
+                                    value={timeLimit}
+                                    onChange={(e) => setTimeLimit(Number(e.target.value))}
+                                    className="w-full"
+                                />
+                                <div className="flex justify-between text-sm text-gray-500 mt-1">
+                                    <span>5 min</span>
+                                    <span>30 min</span>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-4">
+                                <button
+                                    onClick={() => setScreen('menu')}
+                                    className="flex-1 bg-gray-300 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-400 transition"
+                                >
+                                    Volver
+                                </button>
+                                <button
+                                    onClick={() => startGame('timed')}
+                                    disabled={!playerName.trim()}
+                                    className="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
+                                >
+                                    Comenzar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (screen === 'config-untimed') {
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
+                            <div className="text-center mb-8">
+                                <h2 className="text-2xl font-bold text-emerald-600 mb-2">Modo sin Tiempo</h2>
+                                <p className="text-gray-600">Practica a tu ritmo</p>
+                            </div>
+
+                            <div className="mb-8">
+                                <label className="block text-gray-700 font-semibold mb-3">
+                                    Número de verbos: {verbLimit}
+                                </label>
+                                <input
+                                    type="range"
+                                    min="5"
+                                    max="20"
+                                    step="1"
+                                    value={verbLimit}
+                                    onChange={(e) => setVerbLimit(Number(e.target.value))}
+                                    className="w-full"
+                                />
+                                <div className="flex justify-between text-sm text-gray-500 mt-1">
+                                    <span>5 verbos</span>
+                                    <span>20 verbos</span>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-4">
+                                <button
+                                    onClick={() => setScreen('menu')}
+                                    className="flex-1 bg-gray-300 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-400 transition"
+                                >
+                                    Volver
+                                </button>
+                                <button
+                                    onClick={() => startGame('untimed')}
+                                    className="flex-1 bg-emerald-600 text-white py-3 rounded-xl font-semibold hover:bg-emerald-700 transition"
+                                >
+                                    Comenzar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (gameOver) {
+                const timeUsed = gameMode === 'timed' ? timeLimit : 0;
+                const verbsPerMinute = gameMode === 'timed' ? (verbsCompleted / timeUsed).toFixed(2) : 'N/A';
+                const accuracy = ((score / (verbsCompleted * 6)) * 100).toFixed(1);
+
+                if (gameMode === 'timed' && playerName && !showLeaderboard) {
+                    saveToLeaderboard(playerName, verbsCompleted, timeUsed);
+                }
+
+                return (
+                    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+                        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full">
+                            <div className="text-center mb-8">
+                                <Trophy className="mx-auto text-amber-500 mb-4" size={64} />
+                                <h2 className="text-3xl font-bold text-indigo-600 mb-2">¡Partida Terminada!</h2>
+                                {gameMode === 'timed' && playerName && (
+                                    <p className="text-gray-600">Jugador: {playerName}</p>
+                                )}
+                            </div>
+
+                            <div className="space-y-4 mb-8">
+                                <div className="bg-indigo-50 p-4 rounded-lg">
+                                    <div className="text-sm text-gray-600">Verbos Completados</div>
+                                    <div className="text-3xl font-bold text-indigo-600">{verbsCompleted}</div>
+                                </div>
+
+                                <div className="bg-emerald-50 p-4 rounded-lg">
+                                    <div className="text-sm text-gray-600">Conjugaciones Correctas</div>
+                                    <div className="text-3xl font-bold text-emerald-600">
+                                        {score} / {verbsCompleted * 6}
+                                    </div>
+                                    <div className="text-sm text-gray-600 mt-1">Precisión: {accuracy}%</div>
+                                </div>
+
+                                {gameMode === 'timed' && (
+                                    <div className="bg-amber-50 p-4 rounded-lg">
+                                        <div className="text-sm text-gray-600">Velocidad</div>
+                                        <div className="text-3xl font-bold text-amber-600">{verbsPerMinute}</div>
+                                        <div className="text-sm text-gray-600">verbos por minuto</div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="space-y-3">
+                                {gameMode === 'timed' && (
+                                    <button
+                                        onClick={() => {
+                                            setShowLeaderboard(true);
+                                            setScreen('menu');
+                                        }}
+                                        className="w-full bg-amber-600 text-white py-3 rounded-xl font-semibold hover:bg-amber-700 transition flex items-center justify-center gap-2"
+                                    >
+                                        <Trophy size={20} />
+                                        Ver Ranking
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => {
+                                        setScreen(gameMode === 'timed' ? 'config-timed' : 'config-untimed');
+                                        setGameOver(false);
+                                    }}
+                                    className="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 transition"
+                                >
+                                    Jugar de Nuevo
+                                </button>
+                                <button
+                                    onClick={resetGame}
+                                    className="w-full bg-gray-300 text-gray-700 py-3 rounded-xl font-semibold hover:bg-gray-400 transition"
+                                >
+                                    Volver al Menú
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+                    <div className="max-w-2xl mx-auto">
+                        <div className="bg-white rounded-2xl shadow-xl p-6 mb-4">
+                            <div className="flex justify-between items-center mb-4">
+                                <div>
+                                    <div className="text-sm text-gray-600">Puntuación</div>
+                                    <div className="text-2xl font-bold text-indigo-600">{score} / {verbsCompleted * 6}</div>
+                                </div>
+
+                                <div className="text-center">
+                                    <div className="text-sm text-gray-600">Verbos</div>
+                                    <div className="text-2xl font-bold text-emerald-600">
+                                        {verbsCompleted}{gameMode === 'untimed' ? ` / ${verbLimit}` : ''}
+                                    </div>
+                                </div>
+                                
+                                {gameMode === 'timed' && (
+                                    <div className="text-center">
+                                        <div className="text-sm text-gray-600">Tiempo</div>
+                                        <div className={`text-2xl font-bold ${timeLeft < 60 ? 'text-red-600' : 'text-emerald-600'}`}>
+                                            {formatTime(timeLeft)}
+                                        </div>
+                                    </div>
+                                )}
+                                
+                                <button
+                                    onClick={resetGame}
+                                    className="flex items-center gap-2 px-4 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 transition"
+                                >
+                                    <RotateCcw size={18} />
+                                    Salir
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-2xl shadow-xl p-8">
+                            <div className="text-center mb-8">
+                                <h2 className="text-4xl font-bold text-indigo-600 mb-1">{currentVerb}</h2>
+                                <p className="text-sm text-gray-500">({verbs[currentVerb]?.translations})</p>
+                                <p className="text-gray-600 mt-2">Conjuga el verbo en presente del indicativo</p>
+                            </div>
+
+                            <div className="space-y-4">
+                                {pronouns.map((pronoun, index) => (
+                                    <div key={index} className="flex items-center gap-4">
+                                        <div className="w-24 font-semibold text-gray-700">{pronoun}</div>
+                                        <input
+                                            type="text"
+                                            value={answers[index]}
+                                            onChange={(e) => handleInputChange(index, e.target.value)}
+                                            disabled={showResult}
+                                            className={`flex-1 px-4 py-3 border-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                                                showResult
+                                                    ? results[index]
+                                                        ? 'border-green-500 bg-green-50'
+                                                        : 'border-red-500 bg-red-50'
+                                                    : 'border-gray-300'
+                                            }`}
+                                            placeholder="Escribe la conjugación"
+                                            onKeyPress={(e) => {
+                                                if (e.key === 'Enter' && index === 5 && answers.every(a => a)) {
+                                                    handleSubmit();
+                                                }
+                                            }}
+                                        />
+                                        {showResult && (
+                                            <div className="flex items-center gap-2">
+                                                {results[index] ? (
+                                                    <Check className="text-green-600" size={24} />
+                                                ) : (
+                                                    <>
+                                                        <X className="text-red-600" size={24} />
+                                                        <span className="text-sm text-gray-600 font-semibold">{verbs[currentVerb].conjugations[index]}</span>
+                                                    </>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+
+                            <div className="mt-8 flex gap-4">
+                                {!showResult ? (
+                                    <button
+                                        onClick={handleSubmit}
+                                        disabled={answers.some(a => !a)}
+                                        className="flex-1 bg-indigo-600 text-white py-4 rounded-xl font-semibold hover:bg-indigo-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
+                                    >
+                                        Verificar
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={handleNext}
+                                        className="flex-1 bg-emerald-600 text-white py-4 rounded-xl font-semibold hover:bg-emerald-700 transition flex items-center justify-center gap-2"
+                                    >
+                                        Siguiente Verbo
+                                        <Play size={20} />
+                                    </button>
+                                )}
+                            </div>
+
+                            {showResult && (
+                                <div className="mt-6 p-4 bg-indigo-50 rounded-lg">
+                                    <div className="flex items-center justify-center gap-2 text-indigo-700">
+                                        <Trophy size={20} />
+                                        <span className="font-semibold">
+                                            {results.filter(r => r).length} de 6 correctas
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<FrenchVerbGame />, document.getElementById('root'));
+    </script>
+</body>
+</html>
